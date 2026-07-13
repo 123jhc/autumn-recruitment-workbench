@@ -161,4 +161,60 @@ describe('configStore', () => {
     expect(snap.configs.find((c) => c.id === a.id)?.name).toBe('A1')
     expect(snap.configs.find((c) => c.id === b.id)?.name).toBe('B1')
   })
+
+  it('seeds from .env when json exists but configs empty', async () => {
+    process.env.AI_BASE_URL = 'https://api.deepseek.com/v1'
+    process.env.AI_API_KEY = 'sk-seed'
+    process.env.AI_MODEL = 'deepseek-v4-flash'
+    writeFileSync(storePath, JSON.stringify({ configs: [], activeId: null }))
+
+    const store = await importStore()
+    const snapshot = store.snapshot()
+    expect(snapshot.configs).toHaveLength(1)
+    expect(snapshot.configs[0].name).toBe('默认')
+    expect(snapshot.activeId).toBe(snapshot.configs[0].id)
+  })
+
+  it('does not persist available to disk', async () => {
+    const store = await importStore()
+    const created = await store.create({
+      name: 'A', baseUrl: 'https://a/v1', apiKey: 'sk', model: 'm',
+    })
+    store.setAvailability(created.id, true)
+
+    const onDisk = JSON.parse(readFileSync(storePath, 'utf-8'))
+    expect(onDisk.configs[0].available).toBeUndefined()
+    expect(store.snapshot().configs[0].available).toBe(true)
+  })
+
+  it('serializes concurrent updates to the same id', async () => {
+    const store = await importStore()
+    const created = await store.create({
+      name: 'A', baseUrl: 'https://a/v1', apiKey: 'sk', model: 'm',
+    })
+    await Promise.all([
+      store.update(created.id, { name: 'X', baseUrl: 'https://a/v1', model: 'm' }),
+      store.update(created.id, { name: 'Y', baseUrl: 'https://a/v1', model: 'm' }),
+    ])
+    const finalName = store.snapshot().configs[0].name
+    expect(['X', 'Y']).toContain(finalName)
+  })
+
+  it('update of non-existent id returns null', async () => {
+    const store = await importStore()
+    const result = await store.update('no-such', { name: 'A', baseUrl: 'https://a/v1', model: 'm' })
+    expect(result).toBeNull()
+  })
+
+  it('setActive of non-existent id returns false', async () => {
+    const store = await importStore()
+    const ok = await store.setActive('no-such')
+    expect(ok).toBe(false)
+  })
+
+  it('remove of non-existent id returns false', async () => {
+    const store = await importStore()
+    const removed = await store.remove('no-such')
+    expect(removed).toBe(false)
+  })
 })

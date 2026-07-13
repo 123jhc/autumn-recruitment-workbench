@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 
 export interface AiConfigEntry {
   id: string
@@ -23,7 +24,24 @@ interface StoreShape {
   activeId: string | null
 }
 
-const DEFAULT_PATH = 'server/ai-configs.json'
+// 磁盘形状：不含 available（available 仅缓存于内存，不落盘）
+interface OnDiskEntry {
+  id: string
+  name: string
+  baseUrl: string
+  apiKey: string
+  model: string
+}
+
+interface OnDiskStore {
+  configs: OnDiskEntry[]
+  activeId: string | null
+}
+
+// 基于当前文件位置解析，避免受运行时 cwd 影响。
+// 本文件位于 server/src/services/ai/config-store.ts，目标为 server/ai-configs.json，
+// 相对深度为 ../../../（../../ 会错误落到 server/src/）。
+const DEFAULT_PATH = fileURLToPath(new URL('../../../ai-configs.json', import.meta.url))
 
 function resolvePath(): string {
   return process.env.AI_CONFIGS_PATH || DEFAULT_PATH
@@ -35,21 +53,45 @@ function emptyStore(): StoreShape {
 
 function readDisk(path: string): StoreShape | null {
   if (!existsSync(path)) return null
+  let raw: string
   try {
-    const raw = readFileSync(path, 'utf-8')
+    raw = readFileSync(path, 'utf-8')
+  } catch (err) {
+    // 文件存在但无法读取：视为损坏，不静默清空，避免 apiKey 永久丢失
+    console.error(`[config-store] 无法读取 ${path}：`, err instanceof Error ? err.message : err)
+    throw new Error('配置存储文件无法读取，请手动修复或删除 server/ai-configs.json 后重启')
+  }
+  try {
     const parsed = JSON.parse(raw) as StoreShape
+    // configs 非数组（含空数组）视为形状无效/空存储；空但有效的 {configs:[]} 走 emptyStore
     if (!parsed || !Array.isArray(parsed.configs)) return emptyStore()
-    // 保证 available 字段存在
+    // available 仅存在于内存，磁盘读取时补齐为 null
     parsed.configs = parsed.configs.map((c) => ({ ...c, available: c.available ?? null }))
     return parsed
-  } catch {
-    return emptyStore()
+  } catch (err) {
+    // 解析失败（含崩溃写入产生的空字符串等）：损坏，必须显式失败
+    console.error(`[config-store] 配置文件解析失败 ${path}：`, err instanceof Error ? err.message : err)
+    throw new Error('配置存储文件已损坏，请手动修复或删除 server/ai-configs.json 后重启')
   }
 }
 
 function writeDisk(path: string, store: StoreShape): void {
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, JSON.stringify(store, null, 2), 'utf-8')
+  // available 仅缓存于内存，不落盘
+  const onDisk: OnDiskStore = {
+    configs: store.configs.map((c) => ({
+      id: c.id,
+      name: c.name,
+      baseUrl: c.baseUrl,
+      apiKey: c.apiKey,
+      model: c.model,
+    })),
+    activeId: store.activeId,
+  }
+  // 原子写：临时文件 + rename，避免写入中途崩溃产生损坏文件
+  const tmpPath = `${path}.tmp`
+  writeFileSync(tmpPath, JSON.stringify(onDisk, null, 2), 'utf-8')
+  renameSync(tmpPath, path)
 }
 
 function seedFromEnv(): StoreShape {
@@ -76,7 +118,8 @@ class ConfigStore {
   constructor() {
     this.path = resolvePath()
     const disk = readDisk(this.path)
-    if (disk) {
+    // 文件缺失或 configs 为空时从 .env 播种（即便空文件已存在）
+    if (disk && disk.configs.length > 0) {
       this.store = disk
     } else {
       this.store = seedFromEnv()
@@ -94,8 +137,11 @@ class ConfigStore {
     writeDisk(this.path, this.store)
   }
 
+  /**
+   * 返回所有配置的深拷贝（含 apiKey）。
+   * 注意：apiKey 仅供服务端使用，HTTP 出口必须剥离为 AiConfigView（仅 hasApiKey）。
+   */
   snapshot(): StoreShape {
-    // 返回深拷贝避免外部篡改
     return {
       configs: this.store.configs.map((c) => ({ ...c })),
       activeId: this.store.activeId,
@@ -104,7 +150,8 @@ class ConfigStore {
 
   getActive(): AiConfigEntry | null {
     if (!this.store.activeId) return null
-    return this.store.configs.find((c) => c.id === this.store.activeId) ?? null
+    const cfg = this.store.configs.find((c) => c.id === this.store.activeId)
+    return cfg ? { ...cfg } : null
   }
 
   async create(input: {
@@ -156,7 +203,7 @@ class ConfigStore {
       this.store.configs = this.store.configs.filter((c) => c.id !== id)
       removed = this.store.configs.length < before
       if (this.store.activeId === id) this.store.activeId = null
-      this.persist()
+      if (removed) this.persist()
     })
     return removed
   }
@@ -182,7 +229,8 @@ class ConfigStore {
   }
 
   getById(id: string): AiConfigEntry | null {
-    return this.store.configs.find((c) => c.id === id) ?? null
+    const cfg = this.store.configs.find((c) => c.id === id)
+    return cfg ? { ...cfg } : null
   }
 }
 
