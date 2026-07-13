@@ -12,8 +12,9 @@ import type {
 const API_BASE = '/api'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  const hasBody = options?.body != null
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: hasBody ? { 'Content-Type': 'application/json' } : {},
     ...options,
   })
   if (!res.ok) {
