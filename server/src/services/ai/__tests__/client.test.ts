@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { callAi } from '../client.js'
+import { callAi, callAiProbe } from '../client.js'
 
 const config = {
   baseUrl: 'https://api.test.com/v1',
@@ -87,11 +87,23 @@ describe('callAiProbe', () => {
         json: () => Promise.resolve({ choices: [{ message: { content: 'o' } }] }),
       }),
     )
-    const { callAiProbe } = await import('../client.js')
     const result = await callAiProbe(config, 15_000)
     expect(result).toEqual({ ok: true })
     const body = JSON.parse((fetch as any).mock.calls[0][1].body)
     expect(body.max_tokens).toBe(1)
+  })
+
+  it('returns ok:false when 2xx but choices missing', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      }),
+    )
+    const result = await callAiProbe(config, 15_000)
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('choices')
   })
 
   it('returns ok:false with auth message on 401', async () => {
@@ -99,7 +111,6 @@ describe('callAiProbe', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 401 }),
     )
-    const { callAiProbe } = await import('../client.js')
     const result = await callAiProbe(config, 15_000)
     expect(result.ok).toBe(false)
     expect(result.message).toContain('鉴权')
@@ -110,7 +121,6 @@ describe('callAiProbe', () => {
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 404 }),
     )
-    const { callAiProbe } = await import('../client.js')
     const result = await callAiProbe(config, 15_000)
     expect(result.ok).toBe(false)
     expect(result.message).toContain('Base URL')
@@ -120,7 +130,6 @@ describe('callAiProbe', () => {
     const abortError = new Error('aborted')
     abortError.name = 'AbortError'
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abortError))
-    const { callAiProbe } = await import('../client.js')
     const result = await callAiProbe(config, 15_000)
     expect(result.ok).toBe(false)
     expect(result.message).toContain('超时')
