@@ -193,6 +193,7 @@ export default function ApplicationsPage() {
       />
 
       <ApplicationForm
+        key={editingApp?.id ?? 'new'}
         isOpen={drawerOpen}
         onClose={handleCloseDrawer}
         onSubmit={handleSubmitForm}
