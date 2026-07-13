@@ -22,6 +22,30 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const clearError = (field: string) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
+
+  const resetForm = () => {
+    setName(editing?.name ?? '')
+    setBaseUrl(editing?.baseUrl ?? DEFAULT_BASE_URL)
+    setApiKey('')
+    setModel(editing?.model ?? DEFAULT_MODEL)
+    setErrors({})
+    setSubmitting(false)
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
   const validate = (): boolean => {
     const next: Record<string, string> = {}
     if (!name.trim()) next.name = '请输入名称'
@@ -52,7 +76,7 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
   return (
     <Drawer
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={isEditing ? '编辑配置' : '新增配置'}
       width={480}
     >
@@ -63,7 +87,7 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
             className={styles.input}
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); clearError('name') }}
             placeholder="例如：DeepSeek 官方"
           />
         </FormField>
@@ -73,7 +97,7 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
             className={styles.input}
             type="url"
             value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
+            onChange={(e) => { setBaseUrl(e.target.value); clearError('baseUrl') }}
             placeholder="https://api.deepseek.com/v1"
           />
         </FormField>
@@ -88,7 +112,7 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
             className={styles.input}
             type="password"
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={(e) => { setApiKey(e.target.value); clearError('apiKey') }}
             placeholder={isEditing ? '留空表示不修改' : 'sk-...'}
           />
         </FormField>
@@ -98,12 +122,12 @@ export default function AiConfigForm({ isOpen, onClose, onSubmit, editing }: AiC
             className={styles.input}
             type="text"
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => { setModel(e.target.value); clearError('model') }}
             placeholder="deepseek-v4-flash"
           />
         </FormField>
         <div className={styles.actions}>
-          <Button variant="default" onClick={onClose} disabled={submitting}>
+          <Button variant="default" onClick={handleClose} disabled={submitting}>
             取消
           </Button>
           <Button variant="primary" type="submit" loading={submitting}>
