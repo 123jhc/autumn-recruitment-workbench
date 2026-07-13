@@ -1,7 +1,6 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
 import { backupDal } from '../dal/backup.dal'
 import {
-  getAiStatus,
   getAiConfigs,
   createAiConfig,
   updateAiConfig,
@@ -62,12 +61,16 @@ function settingsReducer(state: SettingsState, action: SettingsAction): Settings
       return {
         ...state,
         aiConfigs: state.aiConfigs.map((c) => (c.id === action.payload.id ? action.payload : c)),
+        loading: false,
+        error: null,
       }
     case 'REMOVE_CONFIG':
       return {
         ...state,
         aiConfigs: state.aiConfigs.filter((c) => c.id !== action.payload),
         activeId: state.activeId === action.payload ? null : state.activeId,
+        loading: false,
+        error: null,
       }
     case 'SET_ACTIVE':
       return { ...state, activeId: action.payload }
