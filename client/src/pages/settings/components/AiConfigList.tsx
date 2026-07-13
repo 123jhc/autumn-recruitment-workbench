@@ -24,7 +24,10 @@ export default function AiConfigList({ onEdit, onNew }: AiConfigListProps) {
   const handleTest = async (id: string) => {
     setTestingId(id)
     try {
-      await testConfig(id)
+      const result = await testConfig(id)
+      if (!result.ok) {
+        showToast('error', result.message ?? '连通测试失败')
+      }
     } finally {
       setTestingId(null)
     }

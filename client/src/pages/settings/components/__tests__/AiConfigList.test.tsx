@@ -8,7 +8,7 @@ import type { AiConfigView } from '@autumn-recruitment/shared'
   .IS_REACT_ACT_ENVIRONMENT = true
 
 const mockSetActive = vi.fn().mockResolvedValue(undefined)
-const mockTestConfig = vi.fn().mockResolvedValue(undefined)
+const mockTestConfig = vi.fn().mockResolvedValue({ ok: true })
 const mockDeleteConfig = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('../../../../contexts', () => ({

@@ -13,6 +13,7 @@ import type {
   AiConfigView,
   AiConfigRequest,
   AiConfigsResponse,
+  AiConfigTestResponse,
 } from '@autumn-recruitment/shared'
 import { BackupEnvelopeSchema } from '@autumn-recruitment/shared'
 
@@ -94,7 +95,7 @@ interface SettingsContextValue {
   updateConfig: (id: string, data: AiConfigRequest) => Promise<void>
   deleteConfig: (id: string) => Promise<void>
   setActive: (id: string) => Promise<void>
-  testConfig: (id: string) => Promise<void>
+  testConfig: (id: string) => Promise<AiConfigTestResponse>
   exportBackup: () => Promise<void>
   importBackup: (file: File) => Promise<BackupEnvelope>
 }
@@ -136,8 +137,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const updateConfig = useCallback(async (id: string, data: AiConfigRequest) => {
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      const updated = await updateAiConfig(id, data)
-      dispatch({ type: 'UPDATE_CONFIG', payload: updated })
+      await updateAiConfig(id, data)
+      const refreshed = await getAiConfigs()
+      dispatch({ type: 'SET_CONFIGS', payload: refreshed })
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
@@ -174,16 +176,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const testConfig = useCallback(async (id: string) => {
+  const testConfig = useCallback(async (id: string): Promise<AiConfigTestResponse> => {
     // 测试不设全局 loading，由组件按 id 控制 loading
     try {
       const result = await testAiConfig(id)
       dispatch({ type: 'SET_AVAILABILITY', payload: { id, available: result.ok ? true : false } })
+      return result
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
         payload: err instanceof Error ? err.message : '连通测试失败',
       })
+      return { ok: false, message: err instanceof Error ? err.message : '连通测试失败' }
     }
   }, [])
 

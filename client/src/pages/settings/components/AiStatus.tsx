@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSettingsContext } from '../../../contexts'
-import { Button, Badge } from '../../../components'
+import { Button, Badge, showToast } from '../../../components'
 import type { AiConfigView, AiConfigRequest } from '@autumn-recruitment/shared'
 import AiConfigList from './AiConfigList'
 import AiConfigForm from './AiConfigForm'
@@ -32,13 +32,17 @@ export default function AiStatus() {
   }
 
   const handleSubmit = async (data: AiConfigRequest) => {
-    if (editing) {
-      await updateConfig(editing.id, data)
-    } else {
-      await createConfig(data)
+    try {
+      if (editing) {
+        await updateConfig(editing.id, data)
+      } else {
+        await createConfig(data)
+      }
+      setFormOpen(false)
+      setEditing(null)
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : '保存失败')
     }
-    setFormOpen(false)
-    setEditing(null)
   }
 
   return (
