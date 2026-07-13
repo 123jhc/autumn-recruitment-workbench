@@ -1,0 +1,52 @@
+.tableWrapper {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.headerRow {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerRow th {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.colNumber {
+  width: 60px;
+  text-align: center !important;
+}
+
+.colDifficulty {
+  width: 80px;
+}
+
+.colStatus {
+  width: 90px;
+}
+
+.colDate {
+  width: 110px;
+}
+
+.colActions {
+  width: 180px;
+}
+
+.colTags {
+  min-width: 120px;
+}

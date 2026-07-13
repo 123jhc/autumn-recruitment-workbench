@@ -1,0 +1,25 @@
+.list {
+  /* container */
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 100px 100px 120px 1fr 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 8px;
+}
+
+.headerCell {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.headerCell:last-child {
+  text-align: right;
+}

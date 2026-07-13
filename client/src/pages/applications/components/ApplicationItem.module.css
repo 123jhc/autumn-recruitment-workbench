@@ -1,0 +1,81 @@
+.item {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 100px 100px 120px 1fr 120px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-white);
+  transition: box-shadow 0.15s;
+}
+
+.item:hover {
+  box-shadow: var(--shadow);
+}
+
+.item:not(:last-child) {
+  margin-bottom: 8px;
+}
+
+.company {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.role {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.location {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.badgeCell {
+  /* contained within the badge itself */
+}
+
+.appliedDate {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.nextAction {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nextActionText {
+  font-size: 13px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nextActionDate {
+  font-size: 12px;
+  color: var(--color-text-disabled);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.createTaskButton {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.emptyCell {
+  font-size: 13px;
+  color: var(--color-text-disabled);
+}

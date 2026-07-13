@@ -1,0 +1,86 @@
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.viewAll {
+  font-size: 13px;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+.list {
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  transition: box-shadow 0.15s;
+}
+
+.item:hover {
+  box-shadow: var(--shadow);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.companyRole {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionText {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.actionDate {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.actionDateOverdue {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.emptyWithLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}

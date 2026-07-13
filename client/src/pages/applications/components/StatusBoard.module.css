@@ -1,0 +1,43 @@
+.board {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.card {
+  flex: 1;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+  border-radius: var(--radius);
+  background: var(--color-bg-white);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.card:hover {
+  box-shadow: var(--shadow);
+}
+
+.card.active {
+  border-color: var(--status-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-color) 20%, transparent);
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.count {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+}

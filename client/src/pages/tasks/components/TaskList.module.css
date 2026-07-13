@@ -1,0 +1,20 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.status {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.errorText {
+  color: var(--color-danger);
+  margin-bottom: 12px;
+}
+
+.emptyText {
+  font-size: 14px;
+}

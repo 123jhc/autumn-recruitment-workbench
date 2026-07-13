@@ -1,0 +1,105 @@
+.row {
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s;
+}
+
+.row:hover {
+  background: var(--color-bg-hover);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.cellNumber {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-align: center;
+  width: 60px;
+}
+
+.cellTitle {
+  padding: 10px 12px;
+  min-width: 180px;
+}
+
+.titleLink {
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.titleLink:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+.titleText {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.cellDifficulty {
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.cellTags {
+  padding: 10px 12px;
+  min-width: 120px;
+}
+
+.tagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.noTags {
+  color: var(--color-text-disabled);
+  font-size: 13px;
+}
+
+.cellStatus {
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.cellDate {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.cellActions {
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.deleteBtn {
+  color: var(--color-danger) !important;
+}
+
+.deleteBtn:hover {
+  background: #fff2f0 !important;
+}
