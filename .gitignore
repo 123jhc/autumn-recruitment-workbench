@@ -6,3 +6,4 @@ dist/
 *.tsbuildinfo
 coverage/
 .vitest/
+server/ai-configs.json
