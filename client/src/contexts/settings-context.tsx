@@ -1,27 +1,44 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
 import { backupDal } from '../dal/backup.dal'
-import { getAiStatus } from '../services/api-client'
-import type { BackupEnvelope } from '@autumn-recruitment/shared'
+import {
+  getAiStatus,
+  getAiConfigs,
+  createAiConfig,
+  updateAiConfig,
+  deleteAiConfig,
+  setActiveAiConfig,
+  testAiConfig,
+} from '../services/api-client'
+import type {
+  BackupEnvelope,
+  AiConfigView,
+  AiConfigRequest,
+  AiConfigsResponse,
+} from '@autumn-recruitment/shared'
 import { BackupEnvelopeSchema } from '@autumn-recruitment/shared'
 
 // -- State type --
 interface SettingsState {
-  aiConfigured: boolean
-  aiModel: string | null
+  aiConfigs: AiConfigView[]
+  activeId: string | null
   loading: boolean
   error: string | null
 }
 
 // -- Actions --
 type SettingsAction =
-  | { type: 'SET_AI_STATUS'; payload: { configured: boolean; model: string | null } }
+  | { type: 'SET_CONFIGS'; payload: AiConfigsResponse }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'UPDATE_CONFIG'; payload: AiConfigView }
+  | { type: 'REMOVE_CONFIG'; payload: string }
+  | { type: 'SET_ACTIVE'; payload: string }
+  | { type: 'SET_AVAILABILITY'; payload: { id: string; available: boolean | null } }
 
 // -- Initial state --
 const initialState: SettingsState = {
-  aiConfigured: false,
-  aiModel: null,
+  aiConfigs: [],
+  activeId: null,
   loading: false,
   error: null,
 }
@@ -29,12 +46,38 @@ const initialState: SettingsState = {
 // -- Reducer --
 function settingsReducer(state: SettingsState, action: SettingsAction): SettingsState {
   switch (action.type) {
-    case 'SET_AI_STATUS':
-      return { ...state, aiConfigured: action.payload.configured, aiModel: action.payload.model, loading: false }
+    case 'SET_CONFIGS':
+      return {
+        ...state,
+        aiConfigs: action.payload.configs,
+        activeId: action.payload.activeId,
+        loading: false,
+        error: null,
+      }
     case 'SET_LOADING':
       return { ...state, loading: action.payload }
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false }
+    case 'UPDATE_CONFIG':
+      return {
+        ...state,
+        aiConfigs: state.aiConfigs.map((c) => (c.id === action.payload.id ? action.payload : c)),
+      }
+    case 'REMOVE_CONFIG':
+      return {
+        ...state,
+        aiConfigs: state.aiConfigs.filter((c) => c.id !== action.payload),
+        activeId: state.activeId === action.payload ? null : state.activeId,
+      }
+    case 'SET_ACTIVE':
+      return { ...state, activeId: action.payload }
+    case 'SET_AVAILABILITY':
+      return {
+        ...state,
+        aiConfigs: state.aiConfigs.map((c) =>
+          c.id === action.payload.id ? { ...c, available: action.payload.available } : c,
+        ),
+      }
     default:
       return state
   }
@@ -43,7 +86,12 @@ function settingsReducer(state: SettingsState, action: SettingsAction): Settings
 // -- Context value type --
 interface SettingsContextValue {
   state: SettingsState
-  checkAiStatus: () => Promise<void>
+  loadConfigs: () => Promise<void>
+  createConfig: (data: AiConfigRequest) => Promise<void>
+  updateConfig: (id: string, data: AiConfigRequest) => Promise<void>
+  deleteConfig: (id: string) => Promise<void>
+  setActive: (id: string) => Promise<void>
+  testConfig: (id: string) => Promise<void>
   exportBackup: () => Promise<void>
   importBackup: (file: File) => Promise<BackupEnvelope>
 }
@@ -54,26 +102,92 @@ const SettingsContext = createContext<SettingsContextValue | null>(null)
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(settingsReducer, initialState)
 
-  const checkAiStatus = useCallback(async () => {
+  const loadConfigs = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      const status = await getAiStatus()
-      dispatch({
-        type: 'SET_AI_STATUS',
-        payload: { configured: status.configured, model: status.model ?? null },
-      })
+      const data = await getAiConfigs()
+      dispatch({ type: 'SET_CONFIGS', payload: data })
     } catch (err) {
       dispatch({
         type: 'SET_ERROR',
-        payload: err instanceof Error ? err.message : 'Failed to check AI status',
+        payload: err instanceof Error ? err.message : '加载 AI 配置失败',
       })
     }
   }, [])
 
-  // Check AI status on mount
+  const createConfig = useCallback(async (data: AiConfigRequest) => {
+    dispatch({ type: 'SET_LOADING', payload: true })
+    try {
+      await createAiConfig(data)
+      const refreshed = await getAiConfigs()
+      dispatch({ type: 'SET_CONFIGS', payload: refreshed })
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : '创建配置失败',
+      })
+      throw err
+    }
+  }, [])
+
+  const updateConfig = useCallback(async (id: string, data: AiConfigRequest) => {
+    dispatch({ type: 'SET_LOADING', payload: true })
+    try {
+      const updated = await updateAiConfig(id, data)
+      dispatch({ type: 'UPDATE_CONFIG', payload: updated })
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : '更新配置失败',
+      })
+      throw err
+    }
+  }, [])
+
+  const deleteConfig = useCallback(async (id: string) => {
+    dispatch({ type: 'SET_LOADING', payload: true })
+    try {
+      await deleteAiConfig(id)
+      dispatch({ type: 'REMOVE_CONFIG', payload: id })
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : '删除配置失败',
+      })
+      throw err
+    }
+  }, [])
+
+  const setActive = useCallback(async (id: string) => {
+    try {
+      await setActiveAiConfig(id)
+      dispatch({ type: 'SET_ACTIVE', payload: id })
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : '设置激活配置失败',
+      })
+      throw err
+    }
+  }, [])
+
+  const testConfig = useCallback(async (id: string) => {
+    // 测试不设全局 loading，由组件按 id 控制 loading
+    try {
+      const result = await testAiConfig(id)
+      dispatch({ type: 'SET_AVAILABILITY', payload: { id, available: result.ok ? true : false } })
+    } catch (err) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: err instanceof Error ? err.message : '连通测试失败',
+      })
+    }
+  }, [])
+
+  // Load configs on mount
   useEffect(() => {
-    checkAiStatus()
-  }, [checkAiStatus])
+    loadConfigs()
+  }, [loadConfigs])
 
   const exportBackup = useCallback(async () => {
     const envelope = await backupDal.exportAll()
@@ -98,7 +212,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       throw new Error('无效的 JSON 文件')
     }
 
-    // Validate schema
     const result = BackupEnvelopeSchema.safeParse(parsed)
     if (!result.success) {
       const messages = result.error.issues.map((i) => i.message).join('; ')
@@ -106,8 +219,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
 
     const envelope = result.data
-
-    // Show summary before importing
     const { tasks, taskDrafts, planImports, applications, leetCodeProblems } = envelope.data
     const summary = [
       `任务: ${tasks.length}`,
@@ -117,7 +228,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       `LeetCode 题目: ${leetCodeProblems.length}`,
     ].join(', ')
 
-    // Confirm import
     const confirmed = window.confirm(
       `确认导入备份？当前数据将被替换。\n\n备份摘要:\n${summary}\n\n导出时间: ${envelope.exportedAt}\n版本: ${envelope.schemaVersion}`,
     )
@@ -133,7 +243,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     <SettingsContext.Provider
       value={{
         state,
-        checkAiStatus,
+        loadConfigs,
+        createConfig,
+        updateConfig,
+        deleteConfig,
+        setActive,
+        testConfig,
         exportBackup,
         importBackup,
       }}
