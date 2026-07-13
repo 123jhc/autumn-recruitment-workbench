@@ -164,4 +164,32 @@ describe('AI configs routes', () => {
     const res = await fastify.inject({ method: 'POST', url: '/api/ai/configs/no-such/test' })
     expect(res.statusCode).toBe(404)
   })
+
+  it('PUT /:id returns 404 for unknown id', async () => {
+    const res = await fastify.inject({
+      method: 'PUT',
+      url: '/api/ai/configs/no-such',
+      payload: { name: 'A', baseUrl: 'https://a/v1', model: 'm' },
+    })
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('DELETE /:id returns 404 for unknown id', async () => {
+    const res = await fastify.inject({ method: 'DELETE', url: '/api/ai/configs/no-such' })
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('PUT /:id/active returns 404 for unknown id', async () => {
+    const res = await fastify.inject({ method: 'PUT', url: '/api/ai/configs/no-such/active' })
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('POST rejects invalid baseUrl without http(s)://', async () => {
+    const res = await fastify.inject({
+      method: 'POST',
+      url: '/api/ai/configs',
+      payload: { name: 'A', baseUrl: 'ftp://x', apiKey: 'sk', model: 'm' },
+    })
+    expect(res.statusCode).toBe(400)
+  })
 })
