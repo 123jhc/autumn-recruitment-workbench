@@ -1,39 +1,86 @@
+import { useState } from 'react'
 import { useSettingsContext } from '../../../contexts'
 import { Button, Badge } from '../../../components'
+import type { AiConfigView, AiConfigRequest } from '@autumn-recruitment/shared'
+import AiConfigList from './AiConfigList'
+import AiConfigForm from './AiConfigForm'
 import styles from './AiStatus.module.css'
 
+function AvailabilityBadge({ available }: { available: boolean | null }) {
+  if (available === true) return <Badge variant="success">可用 ✓</Badge>
+  if (available === false) return <Badge variant="danger">不可用</Badge>
+  return <Badge variant="default">未测试</Badge>
+}
+
 export default function AiStatus() {
-  const { state, checkAiStatus } = useSettingsContext()
-  const { aiConfigured, aiModel, loading } = state
+  const { state, loadConfigs, createConfig, updateConfig } = useSettingsContext()
+  const { aiConfigs, activeId, loading } = state
+  const [showList, setShowList] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<AiConfigView | null>(null)
+
+  const active = aiConfigs.find((c) => c.id === activeId) ?? null
+
+  const handleNew = () => {
+    setEditing(null)
+    setFormOpen(true)
+  }
+
+  const handleEdit = (cfg: AiConfigView) => {
+    setEditing(cfg)
+    setFormOpen(true)
+  }
+
+  const handleSubmit = async (data: AiConfigRequest) => {
+    if (editing) {
+      await updateConfig(editing.id, data)
+    } else {
+      await createConfig(data)
+    }
+    setFormOpen(false)
+    setEditing(null)
+  }
 
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>AI 服务状态</h2>
+
       <div className={styles.statusRow}>
         <div className={styles.statusInfo}>
-          {aiConfigured ? (
+          {active ? (
             <>
               <Badge variant="success">已配置</Badge>
-              {aiModel && <span className={styles.modelName}>{aiModel}</span>}
+              <span className={styles.modelName}>
+                {active.name} · {active.model}
+              </span>
+              <AvailabilityBadge available={active.available} />
             </>
           ) : (
-            <>
-              <Badge variant="danger">未配置</Badge>
-              <div className={styles.instructions}>
-                <p>请在项目根目录创建 .env 文件并配置以下环境变量：</p>
-                <pre className={styles.codeBlock}>
-                  AI_BASE_URL=https://api.example.com/v1{'\n'}
-                  AI_API_KEY=your-api-key{'\n'}
-                  AI_MODEL=your-model-name
-                </pre>
-              </div>
-            </>
+            <Badge variant="danger">未配置</Badge>
           )}
         </div>
-        <Button variant="default" size="small" loading={loading} onClick={checkAiStatus}>
-          刷新状态
-        </Button>
+        <div className={styles.statusActions}>
+          <Button variant="default" size="small" loading={loading} onClick={loadConfigs}>
+            刷新状态
+          </Button>
+          <Button variant="default" size="small" onClick={() => setShowList((v) => !v)}>
+            {showList ? '收起' : '编辑配置'}
+          </Button>
+        </div>
       </div>
+
+      {showList && <AiConfigList onEdit={handleEdit} onNew={handleNew} />}
+
+      <AiConfigForm
+        key={editing?.id ?? 'new'}
+        isOpen={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditing(null)
+        }}
+        onSubmit={handleSubmit}
+        editing={editing}
+      />
     </section>
   )
 }

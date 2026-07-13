@@ -24,7 +24,7 @@ interface ImportSectionProps {
 
 export default function ImportSection({ onTasksCreated }: ImportSectionProps) {
   const { state: settingsState } = useSettingsContext()
-  const aiConfigured = settingsState.aiConfigured
+  const aiConfigured = settingsState.activeId != null
 
   const [expanded, setExpanded] = useState(false)
   const [mode, setMode] = useState<ImportMode>('file')
