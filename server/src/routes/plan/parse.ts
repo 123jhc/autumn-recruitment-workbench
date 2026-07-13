@@ -11,11 +11,13 @@ import {
 
 export const planParseRoute: FastifyPluginCallback = (fastify, _opts, done) => {
   fastify.post('/api/plan/parse', async (request) => {
-    const { aiConfig } = fastify
+    const active = fastify.configStore.getActive()
 
-    if (!aiConfig.baseUrl || !aiConfig.apiKey || !aiConfig.model) {
+    if (!active || !active.baseUrl || !active.apiKey || !active.model) {
       throw new AiNotConfiguredError()
     }
+
+    const aiConfig = { baseUrl: active.baseUrl, apiKey: active.apiKey, model: active.model }
 
     const body = request.body as Record<string, unknown> | undefined
     const content = (body?.content as string) || ''

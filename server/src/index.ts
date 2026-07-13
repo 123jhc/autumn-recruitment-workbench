@@ -7,6 +7,7 @@ import { errorHandlerPlugin } from './plugins/error-handler.js'
 import { planExtractRoute } from './routes/plan/extract.js'
 import { planParseRoute } from './routes/plan/parse.js'
 import { aiStatusRoute } from './routes/ai-status.js'
+import { aiConfigsRoute } from './routes/ai-configs.js'
 
 const PORT = parseInt(process.env.PORT || '3001', 10)
 
@@ -25,6 +26,7 @@ async function start() {
   fastify.register(planExtractRoute)
   fastify.register(planParseRoute)
   fastify.register(aiStatusRoute)
+  fastify.register(aiConfigsRoute)
 
   try {
     await fastify.listen({ port: PORT, host: '0.0.0.0' })
