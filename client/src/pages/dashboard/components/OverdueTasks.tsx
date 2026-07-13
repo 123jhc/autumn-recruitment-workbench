@@ -48,7 +48,7 @@ export default function OverdueTasks({ tasks, loading }: OverdueTasksProps) {
       </div>
 
       {tasks.length === 0 ? (
-        <div className={styles.emptyOk}>没有逾期任务</div>
+        <div className={styles.emptyOk}>很好，目前没有逾期任务</div>
       ) : (
         <ul className={styles.list}>
           {tasks.map((task) => (

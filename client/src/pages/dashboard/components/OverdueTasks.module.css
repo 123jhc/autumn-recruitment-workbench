@@ -1,5 +1,8 @@
 .section {
-  margin-bottom: 28px;
+  padding: 18px 20px;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
 }
 
 .sectionHeader {
@@ -94,11 +97,8 @@
 }
 
 .emptyOk {
-  padding: 20px 24px;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: var(--radius);
-  text-align: center;
-  color: var(--color-success);
-  font-size: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }

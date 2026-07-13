@@ -112,9 +112,7 @@ export default function TodayTasks({ tasks, loading }: TodayTasksProps) {
       {tasks.length === 0 ? (
         <EmptyState
           title="今天没有待办任务"
-          description="点击「新建任务」按钮添加今日任务，或前往计划导入页面拆解规划"
-          actionLabel="新建任务"
-          onAction={handleOpenModal}
+          description="可以新建一项任务，或前往计划与任务页面导入规划"
         />
       ) : (
         <ul className={styles.list}>

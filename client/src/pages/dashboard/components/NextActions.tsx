@@ -4,7 +4,7 @@ import type { Application } from '@autumn-recruitment/shared'
 import { APPLICATION_STATUSES } from '@autumn-recruitment/shared'
 import { useApplicationContext } from '../../../contexts'
 import { todayShanghai, formatDate } from '../../../hooks/use-date-utils'
-import { Badge, Button, EmptyState, showToast } from '../../../components'
+import { Badge, Button, showToast } from '../../../components'
 import styles from './NextActions.module.css'
 
 interface NextActionsProps {
@@ -68,11 +68,7 @@ export default function NextActions({ applications, loading }: NextActionsProps)
       </div>
 
       {applications.length === 0 ? (
-        <EmptyState
-          title="近期没有岗位下一步行动"
-          description="前往岗位投递页面，为目标岗位添加下一步行动"
-          actionLabel="前往岗位投递"
-        />
+        <div className={styles.emptyState}>未来 7 天没有待处理行动</div>
       ) : (
         <ul className={styles.list}>
           {applications.map((app) => {

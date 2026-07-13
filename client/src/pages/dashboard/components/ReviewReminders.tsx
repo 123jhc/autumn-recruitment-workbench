@@ -3,7 +3,7 @@ import type { LeetCodeProblem } from '@autumn-recruitment/shared'
 import { DIFFICULTIES } from '@autumn-recruitment/shared'
 import { useLeetCodeContext } from '../../../contexts'
 import { todayShanghai, formatDate } from '../../../hooks/use-date-utils'
-import { Badge, Button, EmptyState, showToast } from '../../../components'
+import { Badge, Button, showToast } from '../../../components'
 import styles from './ReviewReminders.module.css'
 
 interface ReviewRemindersProps {
@@ -66,10 +66,7 @@ export default function ReviewReminders({ problems, loading }: ReviewRemindersPr
       </div>
 
       {problems.length === 0 ? (
-        <EmptyState
-          title="今天没有需要复习的题目"
-          description="前往 LeetCode 页面查看题目列表，标记需要复习的题目"
-        />
+        <div className={styles.emptyState}>今天没有需要复习的题目</div>
       ) : (
         <ul className={styles.list}>
           {problems.map((problem) => {

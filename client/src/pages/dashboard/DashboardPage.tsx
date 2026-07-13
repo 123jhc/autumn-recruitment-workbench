@@ -121,21 +121,11 @@ export default function DashboardPage() {
         />
       </section>
 
-      {/* Two-column layout for tasks / overdue */}
-      <div className={styles.grid}>
-        <div>
-          <TodayTasks tasks={todayTasks} loading={taskState.loading} />
-        </div>
-        <div>
-          <OverdueTasks tasks={overdueTasks} loading={taskState.loading} />
-        </div>
-      </div>
-
-      {/* Full-width sections */}
-      <div className={styles.fullWidth}>
+      {/* Primary task area followed by supporting sections */}
+      <div className={styles.contentStack}>
+        <TodayTasks tasks={todayTasks} loading={taskState.loading} />
+        <OverdueTasks tasks={overdueTasks} loading={taskState.loading} />
         <NextActions applications={upcomingApps} loading={appState.loading} />
-      </div>
-      <div className={styles.fullWidth}>
         <ReviewReminders problems={reviewProblems} loading={lcState.loading} />
       </div>
 
