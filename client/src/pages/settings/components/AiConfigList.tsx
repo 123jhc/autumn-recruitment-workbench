@@ -44,10 +44,9 @@ export default function AiConfigList({ onEdit, onNew }: AiConfigListProps) {
     try {
       await deleteConfig(deleteTarget.id)
       showToast('success', '配置已删除')
+      setDeleteTarget(null)
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : '删除失败')
-    } finally {
-      setDeleteTarget(null)
     }
   }
 

@@ -82,7 +82,7 @@ describe('AiConfigList', () => {
       testButtons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    expect(mockTestConfig).toHaveBeenCalled()
+    expect(mockTestConfig).toHaveBeenCalledWith('a')
   })
 
   it('delete active row shows confirmation mentioning 正在使用', async () => {
