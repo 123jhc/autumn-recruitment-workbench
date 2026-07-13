@@ -73,3 +73,56 @@ describe('callAi', () => {
     await expect(callAi(config, 'test')).rejects.toThrow('AI 请求超时')
   })
 })
+
+describe('callAiProbe', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('returns ok:true on 2xx with choices', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ choices: [{ message: { content: 'o' } }] }),
+      }),
+    )
+    const { callAiProbe } = await import('../client.js')
+    const result = await callAiProbe(config, 15_000)
+    expect(result).toEqual({ ok: true })
+    const body = JSON.parse((fetch as any).mock.calls[0][1].body)
+    expect(body.max_tokens).toBe(1)
+  })
+
+  it('returns ok:false with auth message on 401', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+    )
+    const { callAiProbe } = await import('../client.js')
+    const result = await callAiProbe(config, 15_000)
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('鉴权')
+  })
+
+  it('returns ok:false with not-found message on 404', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404 }),
+    )
+    const { callAiProbe } = await import('../client.js')
+    const result = await callAiProbe(config, 15_000)
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('Base URL')
+  })
+
+  it('returns ok:false on timeout', async () => {
+    const abortError = new Error('aborted')
+    abortError.name = 'AbortError'
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abortError))
+    const { callAiProbe } = await import('../client.js')
+    const result = await callAiProbe(config, 15_000)
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('超时')
+  })
+})
