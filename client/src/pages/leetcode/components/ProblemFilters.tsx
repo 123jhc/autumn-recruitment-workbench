@@ -3,11 +3,13 @@ import { DIFFICULTIES, PROBLEM_STATUSES } from '@autumn-recruitment/shared'
 import Select from '../../../components/Select'
 import Button from '../../../components/Button'
 import styles from './ProblemFilters.module.css'
+import { HOT_100_TOPICS } from '../../../features/leetcode/hot100'
 
 export interface ProblemFilterValues {
   difficulty?: Difficulty
   tag?: string
   status?: ProblemStatus
+  topic?: string
 }
 
 interface ProblemFiltersProps {
@@ -27,6 +29,18 @@ export default function ProblemFilters({ filters, onChange }: ProblemFiltersProp
 
   return (
     <div className={styles.filters}>
+      <div className={styles.filterGroup}>
+        <label className={styles.filterLabel}>专题</label>
+        <Select
+          options={[
+            { value: '', label: '全部专题' },
+            ...HOT_100_TOPICS.map((topic) => ({ value: topic, label: topic })),
+          ]}
+          value={filters.topic ?? ''}
+          onChange={(value) => onChange({ ...filters, topic: value || undefined })}
+        />
+      </div>
+
       <div className={styles.filterGroup}>
         <label className={styles.filterLabel}>难度</label>
         <Select

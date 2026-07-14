@@ -4,6 +4,7 @@ import { todayShanghai, weekRangeShanghai, isOverdue } from '../../hooks/use-dat
 import { ToastContainer } from '../../components'
 import WeekProgress from './components/WeekProgress'
 import TodayTasks from './components/TodayTasks'
+import TodayLeetCode from './components/TodayLeetCode'
 import OverdueTasks from './components/OverdueTasks'
 import NextActions from './components/NextActions'
 import ReviewReminders from './components/ReviewReminders'
@@ -99,6 +100,9 @@ export default function DashboardPage() {
 
   // -- LeetCode review due --
   const reviewProblems = useMemo(() => getReviewDue(today), [getReviewDue, today])
+  const todayLeetCode = useMemo(() => lcState.problems.filter(
+    (problem) => problem.plannedDate === today,
+  ), [lcState.problems, today])
 
   const formatTime = (d: Date) =>
     d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' })
@@ -124,6 +128,7 @@ export default function DashboardPage() {
       {/* Primary task area followed by supporting sections */}
       <div className={styles.contentStack}>
         <TodayTasks tasks={todayTasks} loading={taskState.loading} />
+        <TodayLeetCode problems={todayLeetCode} loading={lcState.loading} />
         <OverdueTasks tasks={overdueTasks} loading={taskState.loading} />
         <NextActions applications={upcomingApps} loading={appState.loading} />
         <ReviewReminders problems={reviewProblems} loading={lcState.loading} />

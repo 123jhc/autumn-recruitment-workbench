@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { LeetCodeProblem, Difficulty, ProblemStatus } from '@autumn-recruitment/shared'
+import type { LeetCodeProblemInput } from '../../../dal/leetcode.dal'
 import { DIFFICULTIES, PROBLEM_STATUSES } from '@autumn-recruitment/shared'
 import Drawer from '../../../components/Drawer'
 import FormField from '../../../components/FormField'
@@ -11,15 +12,8 @@ import styles from './ProblemForm.module.css'
 interface ProblemFormProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (input: Omit<LeetCodeProblem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>
+  onSave: (input: LeetCodeProblemInput) => Promise<void>
   problem?: LeetCodeProblem | null
-}
-
-const EMPTY_FORM: Omit<LeetCodeProblem, 'id' | 'createdAt' | 'updatedAt'> = {
-  title: '',
-  difficulty: 'easy',
-  tags: [],
-  status: 'todo',
 }
 
 export default function ProblemForm({ isOpen, onClose, onSave, problem }: ProblemFormProps) {
@@ -86,7 +80,7 @@ export default function ProblemForm({ isOpen, onClose, onSave, problem }: Proble
       .map((t) => t.trim())
       .filter((t) => t.length > 0)
 
-    const input: Omit<LeetCodeProblem, 'id' | 'createdAt' | 'updatedAt'> = {
+    const input: LeetCodeProblemInput = {
       number: number != null && !isNaN(number) ? number : undefined,
       title: title.trim(),
       url: url.trim() || undefined,

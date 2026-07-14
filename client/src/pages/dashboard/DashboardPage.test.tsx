@@ -36,6 +36,7 @@ vi.mock('../../contexts', () => ({
     getReviewDue: vi.fn().mockReturnValue([]),
     loadProblems: vi.fn().mockResolvedValue(undefined),
     completeReview: vi.fn().mockResolvedValue(undefined),
+    completeProblem: vi.fn().mockResolvedValue(undefined),
   }),
 }))
 
@@ -79,6 +80,7 @@ describe('DashboardPage layout', () => {
   it('stacks all dashboard sections as siblings in display order', () => {
     const sectionTitles = [
       '今日任务',
+      '今日 LeetCode',
       '逾期任务',
       '岗位下一步行动',
       'LeetCode 复习提醒',

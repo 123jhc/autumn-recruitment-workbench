@@ -226,13 +226,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
 
     const envelope = result.data
-    const { tasks, taskDrafts, planImports, applications, leetCodeProblems } = envelope.data
+    const { tasks, taskDrafts, planImports, applications } = envelope.data
+    const leetCodeCount = envelope.schemaVersion === 1
+      ? envelope.data.leetCodeProblems.length
+      : envelope.data.leetCodeCatalog.length
     const summary = [
       `任务: ${tasks.length}`,
       `任务草稿: ${taskDrafts.length}`,
       `计划导入: ${planImports.length}`,
       `岗位投递: ${applications.length}`,
-      `LeetCode 题目: ${leetCodeProblems.length}`,
+      `LeetCode 题目: ${leetCodeCount}`,
     ].join(', ')
 
     const confirmed = window.confirm(

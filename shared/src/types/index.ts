@@ -2,8 +2,19 @@ export type { Task, TaskStatus, TaskPriority, TaskCategory, TaskSource } from '.
 export type { TaskDraft } from './task-draft'
 export type { PlanImport } from './plan-import'
 export type { Application, ApplicationStatus } from './application'
-export type { LeetCodeProblem, Difficulty, ProblemStatus } from './leetcode'
-export type { BackupEnvelope } from './backup'
+export type {
+  LeetCodeProblem,
+  LegacyLeetCodeProblem,
+  LeetCodeCatalogProblem,
+  LeetCodeListEntry,
+  LeetCodeProgress,
+  LeetCodeReviewRecord,
+  LeetCodeSchedule,
+  Difficulty,
+  ProblemStatus,
+  ProgressStatus,
+} from './leetcode'
+export type { BackupEnvelope, BackupEnvelopeV1, BackupEnvelopeV2 } from './backup'
 export type {
   ExtractResponse,
   ParsePlanRequest,

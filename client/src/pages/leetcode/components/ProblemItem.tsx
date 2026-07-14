@@ -9,6 +9,8 @@ interface ProblemItemProps {
   onEdit: (problem: LeetCodeProblem) => void
   onDelete: (problem: LeetCodeProblem) => void
   onReview: (problem: LeetCodeProblem) => void
+  onComplete: (problem: LeetCodeProblem) => void
+  onMove?: (problem: LeetCodeProblem, direction: -1 | 1) => void
 }
 
 const DIFFICULTY_VARIANT: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -23,7 +25,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'success' | 'warning'> = {
   review: 'warning',
 }
 
-export default function ProblemItem({ problem, onEdit, onDelete, onReview }: ProblemItemProps) {
+export default function ProblemItem({ problem, onEdit, onDelete, onReview, onComplete, onMove }: ProblemItemProps) {
   const difficultyLabel = DIFFICULTIES.find((d) => d.value === problem.difficulty)?.label ?? problem.difficulty
   const statusLabel = PROBLEM_STATUSES.find((s) => s.value === problem.status)?.label ?? problem.status
 
@@ -51,6 +53,7 @@ export default function ProblemItem({ problem, onEdit, onDelete, onReview }: Pro
           {difficultyLabel}
         </Badge>
       </td>
+      <td className={styles.cellDate}>{problem.topic ?? '其他题目'}</td>
       <td className={styles.cellTags}>
         {problem.tags.length > 0 ? (
           <div className={styles.tagsList}>
@@ -68,6 +71,9 @@ export default function ProblemItem({ problem, onEdit, onDelete, onReview }: Pro
         </Badge>
       </td>
       <td className={styles.cellDate}>
+        {problem.plannedDate ?? '-'}
+      </td>
+      <td className={styles.cellDate}>
         {problem.solvedDate ?? '-'}
       </td>
       <td className={styles.cellDate}>
@@ -75,6 +81,15 @@ export default function ProblemItem({ problem, onEdit, onDelete, onReview }: Pro
       </td>
       <td className={styles.cellActions}>
         <div className={styles.actionButtons}>
+          {problem.status === 'todo' && (
+            <Button size="small" variant="text" onClick={() => onComplete(problem)}>完成</Button>
+          )}
+          {problem.status === 'todo' && onMove && (
+            <>
+              <Button size="small" variant="text" onClick={() => onMove(problem, -1)} aria-label={`前移 ${problem.title}`}>↑</Button>
+              <Button size="small" variant="text" onClick={() => onMove(problem, 1)} aria-label={`后移 ${problem.title}`}>↓</Button>
+            </>
+          )}
           {problem.status === 'review' && (
             <Button size="small" variant="text" onClick={() => onReview(problem)}>
               完成复习

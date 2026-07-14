@@ -1,0 +1,11 @@
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fieldLabel { margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: var(--color-text); }
+.weekdays { display: flex; flex-wrap: wrap; gap: 8px; }
+.weekday { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 13px; cursor: pointer; }
+.weekday input { accent-color: var(--color-primary); }
+.error { margin-top: 12px; color: var(--color-danger); font-size: 13px; }
+.preview { margin-top: 18px; padding: 14px; border: 1px solid var(--color-primary); border-radius: var(--radius); background: #f6ffed; }
+.summary { font-size: 13px; color: var(--color-text); }
+.topicGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; margin-top: 12px; font-size: 12px; color: var(--color-text-secondary); }
+.footer { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 640px) { .formGrid { grid-template-columns: 1fr; } .topicGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

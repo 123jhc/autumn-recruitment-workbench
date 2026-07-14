@@ -132,7 +132,11 @@ export default function ImportSection() {
             </li>
             <li>
               <span className={styles.entityLabel}>LeetCode 题目</span>
-              <span className={styles.entityCount}>{data.leetCodeProblems.length} 条</span>
+              <span className={styles.entityCount}>
+                {envelope.schemaVersion === 1
+                  ? envelope.data.leetCodeProblems.length
+                  : envelope.data.leetCodeCatalog.length} 条
+              </span>
             </li>
           </ul>
           <p className={styles.exportedAt}>
