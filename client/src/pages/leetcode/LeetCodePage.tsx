@@ -116,9 +116,9 @@ export default function LeetCodePage() {
       ) : (
         <>
           <WeekStats solvedThisWeek={solvedThisWeek} />
-          <div className={styles.tabs}>
+          <div className={styles.tabs} role="tablist" aria-label="题目视图">
             {([['today', '今日计划'], ['all', '全部题目'], ['topics', '按专题']] as const).map(([value, label]) => (
-              <button key={value} type="button" className={`${styles.tab} ${view === value ? styles.tabActive : ''}`} onClick={() => setView(value)}>{label}</button>
+              <button key={value} type="button" role="tab" aria-selected={view === value} className={`${styles.tab} ${view === value ? styles.tabActive : ''}`} onClick={() => setView(value)}>{label}</button>
             ))}
           </div>
           <div className={styles.toolbar}>

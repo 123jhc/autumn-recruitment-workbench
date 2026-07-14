@@ -1,0 +1,175 @@
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import type { LeetCodeProblem, LeetCodeSchedule } from '@autumn-recruitment/shared'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import LeetCodePage from './LeetCodePage'
+
+;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+const context = vi.hoisted(() => ({
+  state: {
+    problems: [] as LeetCodeProblem[],
+    schedule: undefined as LeetCodeSchedule | undefined,
+    loading: false,
+    error: null,
+    filters: {},
+  },
+  filteredProblems: [] as LeetCodeProblem[],
+  loadProblems: vi.fn(),
+  initializeHot100: vi.fn(),
+  reschedule: vi.fn(),
+  moveProblem: vi.fn(),
+  createProblem: vi.fn(),
+  updateProblem: vi.fn(),
+  deleteProblem: vi.fn(),
+  completeProblem: vi.fn(),
+  completeReview: vi.fn(),
+  getReviewDue: vi.fn(),
+  getSolvedThisWeek: vi.fn(),
+  setFilters: vi.fn(),
+}))
+
+vi.mock('../../contexts', () => ({ useLeetCodeContext: () => context }))
+
+const TODAY = '2026-07-14'
+
+function makeProblem(overrides: Partial<LeetCodeProblem> = {}): LeetCodeProblem {
+  return {
+    id: 'problem-two-sum',
+    slug: 'two-sum',
+    number: 1,
+    title: '两数之和',
+    url: 'https://leetcode.cn/problems/two-sum/',
+    difficulty: 'easy',
+    tags: ['数组', '哈希表'],
+    topic: '哈希',
+    listId: 'leetcode-hot-100',
+    status: 'todo',
+    plannedDate: TODAY,
+    queueOrder: 1,
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-07-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+function findButton(label: string): HTMLButtonElement {
+  const button = Array.from(document.body.querySelectorAll('button')).find(
+    (candidate) => candidate.textContent?.trim() === label,
+  )
+  if (!button) throw new Error(`Button not found: ${label}`)
+  return button
+}
+
+describe('LeetCodePage', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-14T04:00:00.000Z'))
+    vi.clearAllMocks()
+    context.state.problems = []
+    context.state.schedule = undefined
+    context.state.loading = false
+    context.state.filters = {}
+    context.filteredProblems = []
+    context.initializeHot100.mockResolvedValue({ added: 100, matched: 0, total: 100 })
+    context.reschedule.mockResolvedValue(undefined)
+    context.completeProblem.mockResolvedValue(makeProblem({ status: 'solved', solvedDate: TODAY }))
+
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    await act(async () => root.unmount())
+    container.remove()
+    vi.useRealTimers()
+  })
+
+  async function renderPage() {
+    await act(async () => root.render(<LeetCodePage />))
+  }
+
+  it('opens the Hot 100 initialization dialog from the empty state', async () => {
+    await renderPage()
+
+    expect(container.textContent).toContain('加载热题 100，按专题开始刷题')
+    await act(async () => findButton('初始化热题 100').click())
+
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]')
+    expect(dialog?.getAttribute('aria-label')).toBe('初始化热题 100')
+    expect(dialog?.textContent).toContain('每周刷题日')
+  })
+
+  it('switches between today, all, and topic views and presents the matching problems', async () => {
+    const todayProblem = makeProblem()
+    const futureProblem = makeProblem({
+      id: 'problem-linked-list-cycle',
+      slug: 'linked-list-cycle',
+      number: 141,
+      title: '环形链表',
+      topic: '链表',
+      plannedDate: '2026-07-15',
+      queueOrder: 2,
+    })
+    context.state.problems = [todayProblem, futureProblem]
+    context.filteredProblems = [todayProblem, futureProblem]
+    await renderPage()
+
+    const todayTab = findButton('今日计划')
+    const allTab = findButton('全部题目')
+    const topicsTab = findButton('按专题')
+    expect(todayTab.getAttribute('role')).toBe('tab')
+    expect(todayTab.getAttribute('aria-selected')).toBe('true')
+    expect(container.textContent).toContain('两数之和')
+    expect(container.textContent).not.toContain('环形链表')
+
+    await act(async () => allTab.click())
+    expect(allTab.getAttribute('aria-selected')).toBe('true')
+    expect(container.textContent).toContain('两数之和')
+    expect(container.textContent).toContain('环形链表')
+
+    await act(async () => topicsTab.click())
+    expect(topicsTab.getAttribute('aria-selected')).toBe('true')
+    const topicHeadings = Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
+    expect(topicHeadings).toContain('哈希1 题')
+    expect(topicHeadings).toContain('链表1 题')
+  })
+
+  it('completes a problem with its slug and the current Shanghai date', async () => {
+    const problem = makeProblem()
+    context.state.problems = [problem]
+    context.filteredProblems = [problem]
+    await renderPage()
+
+    await act(async () => findButton('完成').click())
+
+    expect(context.completeProblem).toHaveBeenCalledOnce()
+    expect(context.completeProblem).toHaveBeenCalledWith('two-sum', TODAY)
+  })
+
+  it('opens the reschedule dialog when a schedule already exists', async () => {
+    const problem = makeProblem()
+    context.state.problems = [problem]
+    context.filteredProblems = [problem]
+    context.state.schedule = {
+      id: 'schedule-hot-100',
+      listId: 'leetcode-hot-100',
+      startDate: '2026-07-01',
+      endDate: '2026-09-30',
+      weekdays: [1, 2, 3, 4, 5],
+      createdAt: '2026-07-01T00:00:00.000Z',
+      updatedAt: '2026-07-01T00:00:00.000Z',
+    }
+    await renderPage()
+
+    await act(async () => findButton('重新排期').click())
+
+    const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]')
+    expect(dialog?.getAttribute('aria-label')).toBe('重新排期未完成题目')
+    expect(dialog?.textContent).toContain('每周刷题日')
+  })
+})
