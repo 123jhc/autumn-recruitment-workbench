@@ -203,6 +203,7 @@ export const leetCodeDal = {
   async moveProblem(slug: string, direction: -1 | 1, today: string): Promise<void> {
     const schedule = await this.getSchedule()
     if (!schedule) throw new Error('请先初始化题单')
+    if (today > schedule.endDate) throw new Error('计划已过期，请先重新排期')
     const entries = await db.leetCodeListEntries.where('listId').equals(schedule.listId).toArray()
     const progress = (await db.leetCodeProgress.bulkGet(entries.map((item) => item.slug)))
       .filter((item): item is LeetCodeProgress => item != null)
@@ -252,9 +253,9 @@ export const leetCodeDal = {
         solutionSummary: patch.solutionSummary ?? progress.solutionSummary,
         updatedAt: now,
       })
-      if (patch.reviewDate) {
+      if (Object.prototype.hasOwnProperty.call(patch, 'reviewDate')) {
         await db.leetCodeReviews.where('slug').equals(slug).and((review) => !review.completedAt).delete()
-        await db.leetCodeReviews.add(newReview(slug, patch.reviewDate, now))
+        if (patch.reviewDate) await db.leetCodeReviews.add(newReview(slug, patch.reviewDate, now))
       }
     })
     return (await this.getById(slug))!

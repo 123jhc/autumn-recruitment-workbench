@@ -74,4 +74,62 @@ describe('leetCodeDal normalized storage', () => {
     expect(completedAfter?.plannedDate).toBe(completedBefore?.plannedDate)
     expect(unfinished.every((row) => row.plannedDate != null && row.plannedDate >= '2026-08-03')).toBe(true)
   })
+
+  it('rejects moving an expired schedule before changing queue order', async () => {
+    await leetCodeDal.initializeHot100(CONFIG)
+    const before = await db.leetCodeProgress.orderBy('queueOrder').toArray()
+    const first = before.find((row) => row.status === 'todo')!
+
+    await expect(leetCodeDal.moveProblem(first.slug, 1, '2026-09-01'))
+      .rejects.toThrow('计划已过期，请先重新排期')
+
+    const after = await db.leetCodeProgress.orderBy('queueOrder').toArray()
+    expect(after).toEqual(before)
+  })
+
+  it('clears only pending reviews when reviewDate is explicitly undefined', async () => {
+    const problem = await leetCodeDal.create({
+      title: '自定义题', difficulty: 'easy', tags: [], status: 'review', reviewDate: '2026-07-20',
+    })
+    const now = new Date().toISOString()
+    await db.leetCodeReviews.add({
+      id: 'completed-review', slug: problem.slug, scheduledDate: '2026-07-01',
+      completedAt: '2026-07-02T00:00:00.000Z', outcome: 'mastered', createdAt: now, updatedAt: now,
+    })
+
+    const updated = await leetCodeDal.update(problem.slug, { reviewDate: undefined })
+
+    const reviews = await db.leetCodeReviews.where('slug').equals(problem.slug).toArray()
+    expect(reviews.filter((review) => !review.completedAt)).toEqual([])
+    expect(reviews.filter((review) => review.completedAt).map((review) => review.id)).toEqual(['completed-review'])
+    expect(updated.reviewDate).toBeUndefined()
+    expect(updated.lastReviewedAt).toBe('2026-07-02T00:00:00.000Z')
+  })
+
+  it('keeps reviews unchanged when reviewDate is omitted from an update', async () => {
+    const problem = await leetCodeDal.create({
+      title: '自定义题', difficulty: 'easy', tags: [], status: 'review', reviewDate: '2026-07-20',
+    })
+    const before = await db.leetCodeReviews.where('slug').equals(problem.slug).toArray()
+
+    await leetCodeDal.update(problem.slug, { title: '更新后标题' })
+
+    expect(await db.leetCodeReviews.where('slug').equals(problem.slug).toArray()).toEqual(before)
+  })
+
+  it('replaces pending reviews when reviewDate is updated to a new date', async () => {
+    const problem = await leetCodeDal.create({
+      title: '自定义题', difficulty: 'easy', tags: [], status: 'review', reviewDate: '2026-07-20',
+    })
+    const previous = await db.leetCodeReviews.where('slug').equals(problem.slug).first()
+
+    const updated = await leetCodeDal.update(problem.slug, { reviewDate: '2026-07-25' })
+
+    const pending = await db.leetCodeReviews.where('slug').equals(problem.slug)
+      .and((review) => !review.completedAt).toArray()
+    expect(pending).toHaveLength(1)
+    expect(pending[0]).toMatchObject({ slug: problem.slug, scheduledDate: '2026-07-25' })
+    expect(pending[0].id).not.toBe(previous?.id)
+    expect(updated.reviewDate).toBe('2026-07-25')
+  })
 })

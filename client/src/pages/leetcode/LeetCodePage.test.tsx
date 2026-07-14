@@ -139,6 +139,40 @@ describe('LeetCodePage', () => {
     expect(topicHeadings).toContain('链表1 题')
   })
 
+  it('keeps a completed problem in today view when its planned date is today', async () => {
+    const completedToday = makeProblem({
+      status: 'solved', solvedDate: TODAY, plannedDate: TODAY,
+    })
+    context.state.problems = [completedToday]
+    context.filteredProblems = [completedToday]
+
+    await renderPage()
+
+    expect(findButton('今日计划').getAttribute('aria-selected')).toBe('true')
+    expect(container.textContent).toContain('两数之和')
+    expect(container.textContent).toContain('已完成')
+  })
+
+  it('shows an unscheduled custom problem in all view and groups it under other problems', async () => {
+    const customProblem = makeProblem({
+      id: 'custom-problem', slug: 'custom-problem', number: undefined, title: '自定义题',
+      topic: undefined, listId: undefined, plannedDate: undefined,
+    })
+    context.state.problems = [customProblem]
+    context.filteredProblems = [customProblem]
+    await renderPage()
+
+    expect(container.textContent).not.toContain('自定义题')
+
+    await act(async () => findButton('全部题目').click())
+    expect(container.textContent).toContain('自定义题')
+
+    await act(async () => findButton('按专题').click())
+    const topicHeadings = Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
+    expect(topicHeadings).toContain('其他题目1 题')
+    expect(container.textContent).toContain('自定义题')
+  })
+
   it('completes a problem with its slug and the current Shanghai date', async () => {
     const problem = makeProblem()
     context.state.problems = [problem]
