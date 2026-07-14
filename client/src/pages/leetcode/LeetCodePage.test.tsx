@@ -67,7 +67,7 @@ describe('LeetCodePage', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-07-14T04:00:00.000Z'))
+    vi.setSystemTime(new Date('2026-07-13T16:30:00.000Z'))
     vi.clearAllMocks()
     context.state.problems = []
     context.state.schedule = undefined

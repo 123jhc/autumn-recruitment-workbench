@@ -88,4 +88,23 @@ npm run typecheck --workspace=client
 ## 顾虑
 
 - 全量测试输出包含仓库既有的 Vitest workspace 弃用提示，以及 PDF 异常路径测试的 `Warning: Indexing all PDF objects`；均未导致失败，也非本任务引入。
-- 日期测试固定在不会跨 UTC/上海日期边界的时刻，验证页面传递当天日期；`todayShanghai` 的跨时区实现细节不属于本任务范围。
+- 日期测试已在评审修复中调整为跨 UTC/上海日期边界的时刻，详见下方追加记录。
+
+## 评审修复：上海日期边界
+
+- 将测试固定时刻从 `2026-07-14T04:00:00.000Z` 改为 `2026-07-13T16:30:00.000Z`。
+- 新时刻在 UTC 是 `2026-07-13`，在上海是 `2026-07-14`；完成操作仍期望向 context 传递 `2026-07-14`，因此测试可以区分 UTC 日期与上海日期实现。
+- 本次只修改测试数据与报告，未修改生产代码或 UI/DAL 边界。
+
+验证命令：
+
+```text
+npm test -- --run client/src/pages/leetcode/LeetCodePage.test.tsx
+```
+
+通过输出：
+
+```text
+Test Files  1 passed (1)
+Tests       4 passed (4)
+```
