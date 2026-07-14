@@ -9,7 +9,7 @@
 - 产品规格：`docs/superpowers/specs/2026-07-13-autumn-recruitment-workbench-design.md`
 - 仪表盘布局：`docs/superpowers/specs/2026-07-13-dashboard-layout-refinement-design.md`
 - AI 配置管理：`docs/superpowers/specs/2026-07-13-ai-config-management-design.md`
-- 当前版本：`docs/versions/v1.1.0.md`
+- 当前版本：`docs/versions/v1.2.0.md`
 
 规格是功能范围和交互流程的权威来源。若规格与本文件冲突，以用户最新要求为最高优先级，其次以规格为准。
 
@@ -24,7 +24,8 @@
 
 - 前端：Vite + React 19 + TypeScript + React Router 7
 - 样式：CSS Modules
-- 数据：Dexie.js 4（IndexedDB），通过 `client/src/dal/` 访问
+- 数据：Dexie.js 4（IndexedDB，当前 schema v2），通过 `client/src/dal/` 访问
+- LeetCode：热题 100 离线内置（`client/src/features/leetcode/hot100.ts`），按专题排期；数据规范化为五张表（目录/题单关系/进度/复习记录/排期），`LeetCodeProblem` 仅作页面联表读模型，不落 Dexie 单表
 - 状态：React Context（`client/src/contexts/`）
 - 服务端：Fastify 5（`server/`），本地文件提取 + AI 代理
 - AI：OpenAI 兼容接口，由服务端代理调用；多配置管理（`server/src/services/ai/config-store.ts`），JSON 文件持久化，支持网页端新增/编辑/删除/单选激活/连通测试
@@ -38,6 +39,8 @@
 - AI 未配置时，手动任务、岗位、LeetCode、备份功能必须正常
 - 数据访问全部走 DAL 层，页面不得直接操作 Dexie
 - 日期 YYYY-MM-DD，时间戳 ISO 8601
+- LeetCode 每日题不复制进通用 `Task`，今日总览仅派生展示；初始化/重新排期 slug 优先、题号回退匹配，题号与 slug 命中不同记录时阻断
+- 备份 schemaVersion 判别联合，导出 v2，导入兼容 v1 并迁移
 - 不得引入规格外的功能，也不得擅自缩小规格范围
 
 ## 工程约束
