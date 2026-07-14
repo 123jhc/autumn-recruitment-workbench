@@ -207,7 +207,14 @@ export const leetCodeDal = {
     const entries = await db.leetCodeListEntries.where('listId').equals(schedule.listId).toArray()
     const progress = (await db.leetCodeProgress.bulkGet(entries.map((item) => item.slug)))
       .filter((item): item is LeetCodeProgress => item != null)
+    const orderBefore = progress.filter((item) => item.status === 'todo')
+      .sort((a, b) => a.queueOrder - b.queueOrder)
+      .map((item) => item.slug)
     const reordered = moveInQueue(progress, slug, direction)
+    const orderAfter = reordered.filter((item) => item.status === 'todo')
+      .sort((a, b) => a.queueOrder - b.queueOrder)
+      .map((item) => item.slug)
+    if (orderBefore.every((item, index) => item === orderAfter[index])) return
     const startDate = today > schedule.startDate ? today : schedule.startDate
     const assignments = buildSchedule({
       problems: reordered,
@@ -234,13 +241,14 @@ export const leetCodeDal = {
     const now = new Date().toISOString()
     const slug = slugFromUrl(input.url) ?? `custom-${nanoid()}`
     const queueOrder = (await db.leetCodeProgress.orderBy('queueOrder').last())?.queueOrder ?? 0
+    const status = input.status === 'todo' ? 'todo' : 'solved'
     await db.transaction('rw', [db.leetCodeCatalog, db.leetCodeProgress, db.leetCodeReviews], async () => {
       await db.leetCodeCatalog.add({
         slug, number: input.number, title: input.title, url: input.url ?? '', difficulty: input.difficulty,
         tags: input.tags, source: 'custom', updatedAt: now,
       })
       await db.leetCodeProgress.add({
-        slug, status: input.status === 'todo' ? 'todo' : 'solved', solvedDate: input.solvedDate,
+        slug, status, solvedDate: status === 'solved' ? input.solvedDate : undefined,
         solutionSummary: input.solutionSummary, queueOrder: queueOrder + 1, createdAt: now, updatedAt: now,
       })
       if (input.reviewDate) await db.leetCodeReviews.add(newReview(slug, input.reviewDate, now))

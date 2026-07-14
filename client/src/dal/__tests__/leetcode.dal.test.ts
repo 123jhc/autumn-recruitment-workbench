@@ -87,6 +87,23 @@ describe('leetCodeDal normalized storage', () => {
     expect(after).toEqual(before)
   })
 
+  it.each([
+    { boundary: 'first problem backward', index: 0, direction: -1 },
+    { boundary: 'last problem forward', index: -1, direction: 1 },
+  ] as const)('leaves progress and schedule unchanged for $boundary', async ({ index, direction }) => {
+    await leetCodeDal.initializeHot100(CONFIG)
+    const beforeProgress = await db.leetCodeProgress.toArray()
+    const beforeSchedule = await db.leetCodeSchedules.toArray()
+    const unfinished = beforeProgress.filter((row) => row.status === 'todo')
+      .sort((a, b) => a.queueOrder - b.queueOrder)
+    const boundary = index === 0 ? unfinished[0] : unfinished.at(-1)!
+
+    await leetCodeDal.moveProblem(boundary.slug, direction, '2026-07-20')
+
+    expect(await db.leetCodeProgress.toArray()).toEqual(beforeProgress)
+    expect(await db.leetCodeSchedules.toArray()).toEqual(beforeSchedule)
+  })
+
   it('leaves progress and schedule unchanged when the remaining range has no study day', async () => {
     const mondayOnly = {
       listId: 'hot-100', startDate: '2026-07-13', endDate: '2026-07-19', weekdays: [1],
@@ -175,6 +192,16 @@ describe('leetCodeDal normalized storage', () => {
     expect(pending[0]).toMatchObject({ slug: problem.slug, scheduledDate: '2026-07-25' })
     expect(pending[0].id).not.toBe(previous?.id)
     expect(updated.reviewDate).toBe('2026-07-25')
+  })
+
+  it('does not keep solvedDate when creating a todo problem', async () => {
+    const problem = await leetCodeDal.create({
+      title: '待办题', difficulty: 'easy', tags: [], status: 'todo', solvedDate: '2026-07-10',
+    })
+
+    expect(problem.status).toBe('todo')
+    expect(problem.solvedDate).toBeUndefined()
+    expect((await db.leetCodeProgress.get(problem.slug))?.solvedDate).toBeUndefined()
   })
 
   it('distinguishes omitted editable fields from fields explicitly cleared', async () => {
