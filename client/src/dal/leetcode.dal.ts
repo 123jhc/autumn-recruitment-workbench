@@ -208,8 +208,26 @@ export const leetCodeDal = {
     const progress = (await db.leetCodeProgress.bulkGet(entries.map((item) => item.slug)))
       .filter((item): item is LeetCodeProgress => item != null)
     const reordered = moveInQueue(progress, slug, direction)
-    await db.leetCodeProgress.bulkPut(reordered)
-    await this.reschedule({ ...schedule, startDate: today > schedule.startDate ? today : schedule.startDate })
+    const startDate = today > schedule.startDate ? today : schedule.startDate
+    const assignments = buildSchedule({
+      problems: reordered,
+      startDate,
+      endDate: schedule.endDate,
+      weekdays: schedule.weekdays,
+    })
+    const bySlug = new Map(assignments.map((item) => [item.slug, item]))
+    const now = new Date().toISOString()
+    const scheduledProgress = reordered.map((row) => row.status === 'solved' ? row : {
+      ...row,
+      plannedDate: bySlug.get(row.slug)?.plannedDate,
+      queueOrder: bySlug.get(row.slug)?.queueOrder ?? row.queueOrder,
+      updatedAt: now,
+    })
+
+    await db.transaction('rw', [db.leetCodeProgress, db.leetCodeSchedules], async () => {
+      await db.leetCodeProgress.bulkPut(scheduledProgress)
+      await db.leetCodeSchedules.put({ ...schedule, startDate, updatedAt: now })
+    })
   },
 
   async create(input: LeetCodeProblemInput): Promise<LeetCodeProblem> {
@@ -235,22 +253,25 @@ export const leetCodeDal = {
     const progress = await db.leetCodeProgress.get(slug)
     if (!catalog || !progress) throw new Error(`LeetCodeProblem not found: ${slug}`)
     const now = new Date().toISOString()
+    const status = patch.status ? (patch.status === 'todo' ? 'todo' : 'solved') : progress.status
 
     await db.transaction('rw', [db.leetCodeCatalog, db.leetCodeProgress, db.leetCodeReviews], async () => {
       await db.leetCodeCatalog.put({
         ...catalog,
-        number: patch.number ?? catalog.number,
+        number: hasOwn(patch, 'number') ? patch.number : catalog.number,
         title: patch.title ?? catalog.title,
-        url: patch.url ?? catalog.url,
+        url: hasOwn(patch, 'url') ? (patch.url ?? '') : catalog.url,
         difficulty: patch.difficulty ?? catalog.difficulty,
         tags: patch.tags ?? catalog.tags,
         updatedAt: now,
       })
       await db.leetCodeProgress.put({
         ...progress,
-        status: patch.status ? (patch.status === 'todo' ? 'todo' : 'solved') : progress.status,
-        solvedDate: patch.solvedDate ?? progress.solvedDate,
-        solutionSummary: patch.solutionSummary ?? progress.solutionSummary,
+        status,
+        solvedDate: status === 'todo'
+          ? undefined
+          : hasOwn(patch, 'solvedDate') ? patch.solvedDate : progress.solvedDate,
+        solutionSummary: hasOwn(patch, 'solutionSummary') ? patch.solutionSummary : progress.solutionSummary,
         updatedAt: now,
       })
       if (Object.prototype.hasOwnProperty.call(patch, 'reviewDate')) {
@@ -349,4 +370,8 @@ function slugFromUrl(url?: string): string | undefined {
 
 function newReview(slug: string, scheduledDate: string, now: string): LeetCodeReviewRecord {
   return { id: nanoid(), slug, scheduledDate, createdAt: now, updatedAt: now }
+}
+
+function hasOwn<T extends object>(value: T, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key)
 }

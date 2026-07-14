@@ -61,6 +61,14 @@ function findButton(label: string): HTMLButtonElement {
   return button
 }
 
+function findTopicSection(title: string): HTMLElement {
+  const section = Array.from(document.body.querySelectorAll<HTMLElement>('section')).find(
+    (candidate) => candidate.querySelector('h2')?.firstChild?.textContent?.trim() === title,
+  )
+  if (!section) throw new Error(`Topic section not found: ${title}`)
+  return section
+}
+
 describe('LeetCodePage', () => {
   let container: HTMLDivElement
   let root: Root
@@ -104,6 +112,20 @@ describe('LeetCodePage', () => {
     expect(dialog?.textContent).toContain('每周刷题日')
   })
 
+  it('offers Hot 100 initialization when custom problems exist without a schedule', async () => {
+    const customProblem = makeProblem({
+      id: 'custom-problem', slug: 'custom-problem', listId: undefined, topic: undefined, plannedDate: undefined,
+    })
+    context.state.problems = [customProblem]
+    context.filteredProblems = [customProblem]
+
+    await renderPage()
+
+    await act(async () => findButton('初始化热题 100').click())
+    expect(document.body.querySelector<HTMLElement>('[role="dialog"]')?.getAttribute('aria-label'))
+      .toBe('初始化热题 100')
+  })
+
   it('switches between today, all, and topic views and presents the matching problems', async () => {
     const todayProblem = makeProblem()
     const futureProblem = makeProblem({
@@ -134,9 +156,12 @@ describe('LeetCodePage', () => {
 
     await act(async () => topicsTab.click())
     expect(topicsTab.getAttribute('aria-selected')).toBe('true')
-    const topicHeadings = Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
-    expect(topicHeadings).toContain('哈希1 题')
-    expect(topicHeadings).toContain('链表1 题')
+    const hashSection = findTopicSection('哈希')
+    const linkedListSection = findTopicSection('链表')
+    expect(hashSection.querySelector('h2')?.firstChild?.textContent).toBe('哈希')
+    expect(hashSection.querySelector('h2 span')?.textContent).toBe('1 题')
+    expect(linkedListSection.querySelector('h2')?.firstChild?.textContent).toBe('链表')
+    expect(linkedListSection.querySelector('h2 span')?.textContent).toBe('1 题')
   })
 
   it('keeps a completed problem in today view when its planned date is today', async () => {
@@ -168,8 +193,9 @@ describe('LeetCodePage', () => {
     expect(container.textContent).toContain('自定义题')
 
     await act(async () => findButton('按专题').click())
-    const topicHeadings = Array.from(container.querySelectorAll('h2')).map((heading) => heading.textContent)
-    expect(topicHeadings).toContain('其他题目1 题')
+    const otherSection = findTopicSection('其他题目')
+    expect(otherSection.querySelector('h2')?.firstChild?.textContent).toBe('其他题目')
+    expect(otherSection.querySelector('h2 span')?.textContent).toBe('1 题')
     expect(container.textContent).toContain('自定义题')
   })
 
@@ -205,5 +231,17 @@ describe('LeetCodePage', () => {
     const dialog = document.body.querySelector<HTMLElement>('[role="dialog"]')
     expect(dialog?.getAttribute('aria-label')).toBe('重新排期未完成题目')
     expect(dialog?.textContent).toContain('每周刷题日')
+  })
+
+  it('shows and applies clear filters when only a topic is selected', async () => {
+    const problem = makeProblem()
+    context.state.problems = [problem]
+    context.state.filters = { topic: '哈希' }
+    context.filteredProblems = [problem]
+    await renderPage()
+
+    await act(async () => findButton('清除筛选').click())
+
+    expect(context.setFilters).toHaveBeenCalledWith({})
   })
 })

@@ -104,11 +104,12 @@ export default function LeetCodePage() {
         </div>
         <div className={styles.headerActions}>
           {schedule && <Button onClick={() => setPlanModal('reschedule')}>重新排期</Button>}
+          {!schedule && problems.length > 0 && <Button variant="primary" onClick={() => setPlanModal('initialize')}>初始化热题 100</Button>}
           <Button onClick={handleNew}>+ 新增题目</Button>
         </div>
       </div>
 
-      {problems.length === 0 ? (
+      {!schedule && problems.length === 0 ? (
         <div className={styles.initializeCard}>
           <EmptyState icon="🔥" title="加载热题 100，按专题开始刷题" description="选择计划周期和每周刷题日，确认预览后自动生成每日计划。" />
           <Button variant="primary" onClick={() => setPlanModal('initialize')}>初始化热题 100</Button>

@@ -87,6 +87,50 @@ describe('leetCodeDal normalized storage', () => {
     expect(after).toEqual(before)
   })
 
+  it('leaves progress and schedule unchanged when the remaining range has no study day', async () => {
+    const mondayOnly = {
+      listId: 'hot-100', startDate: '2026-07-13', endDate: '2026-07-19', weekdays: [1],
+    }
+    await leetCodeDal.initializeHot100(mondayOnly)
+    const beforeProgress = await db.leetCodeProgress.toArray()
+    const beforeSchedule = await db.leetCodeSchedules.toArray()
+    const first = beforeProgress.find((row) => row.status === 'todo')!
+
+    await expect(leetCodeDal.moveProblem(first.slug, 1, '2026-07-14'))
+      .rejects.toThrow('所选日期范围内没有可用刷题日')
+
+    expect(await db.leetCodeProgress.toArray()).toEqual(beforeProgress)
+    expect(await db.leetCodeSchedules.toArray()).toEqual(beforeSchedule)
+  })
+
+  it('moves and reschedules unfinished problems together while preserving solved dates', async () => {
+    await leetCodeDal.initializeHot100(CONFIG)
+    const before = await db.leetCodeProgress.orderBy('queueOrder').toArray()
+    const completed = before[0]
+    await leetCodeDal.complete(completed.slug, '2026-07-13')
+    const completedBefore = await db.leetCodeProgress.get(completed.slug)
+    const unfinishedBefore = (await db.leetCodeProgress.orderBy('queueOrder').toArray())
+      .filter((row) => row.status === 'todo')
+    const movedIndex = unfinishedBefore.findIndex((row, index) =>
+      index > 0 && row.plannedDate !== unfinishedBefore[index - 1].plannedDate,
+    )
+    const moved = unfinishedBefore[movedIndex]
+    const displaced = unfinishedBefore[movedIndex - 1]
+
+    await leetCodeDal.moveProblem(moved.slug, -1, CONFIG.startDate)
+
+    const unfinishedAfter = (await db.leetCodeProgress.orderBy('queueOrder').toArray())
+      .filter((row) => row.status === 'todo')
+    expect(unfinishedAfter.slice(movedIndex - 1, movedIndex + 1).map((row) => row.slug))
+      .toEqual([moved.slug, displaced.slug])
+    expect(unfinishedAfter[movedIndex - 1].plannedDate).toBe(displaced.plannedDate)
+    expect(unfinishedAfter[movedIndex - 1].plannedDate).not.toBe(moved.plannedDate)
+    expect(await db.leetCodeProgress.get(completed.slug)).toMatchObject({
+      plannedDate: completedBefore?.plannedDate,
+      solvedDate: completedBefore?.solvedDate,
+    })
+  })
+
   it('clears only pending reviews when reviewDate is explicitly undefined', async () => {
     const problem = await leetCodeDal.create({
       title: '自定义题', difficulty: 'easy', tags: [], status: 'review', reviewDate: '2026-07-20',
@@ -131,5 +175,48 @@ describe('leetCodeDal normalized storage', () => {
     expect(pending[0]).toMatchObject({ slug: problem.slug, scheduledDate: '2026-07-25' })
     expect(pending[0].id).not.toBe(previous?.id)
     expect(updated.reviewDate).toBe('2026-07-25')
+  })
+
+  it('distinguishes omitted editable fields from fields explicitly cleared', async () => {
+    const problem = await leetCodeDal.create({
+      number: 42,
+      title: '自定义题',
+      url: 'https://leetcode.cn/problems/custom-problem/',
+      difficulty: 'medium',
+      tags: ['数组'],
+      status: 'solved',
+      solvedDate: '2026-07-10',
+      solutionSummary: '原摘要',
+    })
+
+    const omitted = await leetCodeDal.update(problem.slug, { title: '只改标题' })
+    expect(omitted).toMatchObject({
+      number: 42,
+      url: 'https://leetcode.cn/problems/custom-problem/',
+      solvedDate: '2026-07-10',
+      solutionSummary: '原摘要',
+    })
+
+    const cleared = await leetCodeDal.update(problem.slug, {
+      number: undefined,
+      url: undefined,
+      solvedDate: undefined,
+      solutionSummary: undefined,
+    })
+    expect(cleared.number).toBeUndefined()
+    expect(cleared.url).toBeUndefined()
+    expect(cleared.solvedDate).toBeUndefined()
+    expect(cleared.solutionSummary).toBeUndefined()
+  })
+
+  it('clears solvedDate when a solved problem is changed back to todo', async () => {
+    const problem = await leetCodeDal.create({
+      title: '自定义题', difficulty: 'easy', tags: [], status: 'solved', solvedDate: '2026-07-10',
+    })
+
+    const updated = await leetCodeDal.update(problem.slug, { status: 'todo' })
+
+    expect(updated.status).toBe('todo')
+    expect(updated.solvedDate).toBeUndefined()
   })
 })

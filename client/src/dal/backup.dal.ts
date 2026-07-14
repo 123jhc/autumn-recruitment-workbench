@@ -1,6 +1,6 @@
 import { db } from '../db/database.js'
-import { nanoid } from 'nanoid'
-import type { BackupEnvelope, BackupEnvelopeV2, LegacyLeetCodeProblem } from '@autumn-recruitment/shared'
+import type { BackupEnvelope, BackupEnvelopeV2 } from '@autumn-recruitment/shared'
+import { normalizeLegacyLeetCodeProblems } from '../features/leetcode/legacy-normalization'
 
 const ALL_TABLES = [
   db.tasks, db.taskDrafts, db.planImports, db.applications, db.leetCodeProblems,
@@ -29,7 +29,13 @@ export const backupDal = {
   },
 
   async importBackup(envelope: BackupEnvelope): Promise<void> {
-    const normalized = envelope.schemaVersion === 1 ? migrateV1(envelope.data.leetCodeProblems) : envelope.data
+    const normalized = envelope.schemaVersion === 1
+      ? {
+          ...normalizeLegacyLeetCodeProblems(envelope.data.leetCodeProblems),
+          leetCodeListEntries: [],
+          leetCodeSchedules: [],
+        }
+      : envelope.data
 
     await db.transaction('rw', ALL_TABLES, async () => {
       await Promise.all(ALL_TABLES.map((table) => table.clear()))
@@ -44,36 +50,4 @@ export const backupDal = {
       if (normalized.leetCodeSchedules.length > 0) await db.leetCodeSchedules.bulkAdd(normalized.leetCodeSchedules)
     })
   },
-}
-
-function migrateV1(problems: LegacyLeetCodeProblem[]) {
-  const leetCodeCatalog = []
-  const leetCodeProgress = []
-  const leetCodeReviews = []
-
-  for (const [index, problem] of problems.entries()) {
-    const slug = problem.url?.match(/\/problems\/([^/]+)/)?.[1] ?? `legacy-${problem.id}`
-    leetCodeCatalog.push({
-      slug, number: problem.number, title: problem.title, url: problem.url ?? '', difficulty: problem.difficulty,
-      tags: problem.tags, source: 'custom' as const, updatedAt: problem.updatedAt,
-    })
-    leetCodeProgress.push({
-      slug, status: problem.status === 'todo' ? 'todo' as const : 'solved' as const,
-      solvedDate: problem.solvedDate, solutionSummary: problem.solutionSummary, queueOrder: index + 1,
-      createdAt: problem.createdAt, updatedAt: problem.updatedAt,
-    })
-    if (problem.reviewDate) {
-      leetCodeReviews.push({
-        id: nanoid(), slug, scheduledDate: problem.reviewDate, createdAt: problem.createdAt, updatedAt: problem.updatedAt,
-      })
-    }
-    if (problem.lastReviewedAt) {
-      leetCodeReviews.push({
-        id: nanoid(), slug, scheduledDate: problem.lastReviewedAt.slice(0, 10), completedAt: problem.lastReviewedAt,
-        outcome: 'mastered' as const, createdAt: problem.createdAt, updatedAt: problem.updatedAt,
-      })
-    }
-  }
-
-  return { leetCodeCatalog, leetCodeListEntries: [], leetCodeProgress, leetCodeReviews, leetCodeSchedules: [] }
 }

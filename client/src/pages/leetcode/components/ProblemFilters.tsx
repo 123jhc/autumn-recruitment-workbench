@@ -21,7 +21,7 @@ const ALL_DIFFICULTY = ''
 const ALL_STATUS = ''
 
 export default function ProblemFilters({ filters, onChange }: ProblemFiltersProps) {
-  const hasFilters = filters.difficulty || filters.tag || filters.status
+  const hasFilters = filters.difficulty || filters.tag || filters.status || filters.topic
 
   const handleClear = () => {
     onChange({})
